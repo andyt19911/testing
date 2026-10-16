@@ -1,0 +1,281 @@
+{
+  "id": "bmw-can",
+  "name": "BMW, CAN-bus models (about 2013 on)",
+  "bus": "can",
+  "years": "2013–",
+  "models": [
+    "R 1200 / 1250 LC",
+    "S 1000 RR/R/XR (2015 on)",
+    "K 1600",
+    "F 750/850/900",
+    "R nineT",
+    "R 18",
+    "M 1000"
+  ],
+  "notes": "Starting point only. The control-unit addresses follow BMW's usual conventions and are not yet confirmed on this model: run Discovery › Find control units on your bike, then add what it finds. Writing is disabled until a profile is verified.",
+  "ecus": [
+    {
+      "id": "obd",
+      "name": "Engine (OBD-II standard data)",
+      "shortName": "OBD",
+      "address": "0x7DF",
+      "protocol": "obd",
+      "category": "obd",
+      "verified": true,
+      "liveData": [
+        {
+          "id": "rpm",
+          "name": "Engine speed",
+          "ident": 12,
+          "unit": "rpm",
+          "encoding": {
+            "length": 2,
+            "scale": 0.25
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 0,
+          "max": 9000
+        },
+        {
+          "id": "coolant",
+          "name": "Coolant temperature",
+          "ident": 5,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": -20,
+          "max": 120
+        },
+        {
+          "id": "throttle",
+          "name": "Throttle position",
+          "ident": 17,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "battery",
+          "name": "Control module voltage",
+          "ident": 66,
+          "unit": "V",
+          "encoding": {
+            "length": 2,
+            "scale": 0.001,
+            "decimals": 2
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 10,
+          "max": 16
+        },
+        {
+          "id": "speed",
+          "name": "Vehicle speed",
+          "ident": 13,
+          "unit": "km/h",
+          "encoding": {},
+          "group": "OBD-II",
+          "min": 0,
+          "max": 250
+        },
+        {
+          "id": "load",
+          "name": "Engine load",
+          "ident": 4,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "map",
+          "name": "Intake pressure",
+          "ident": 11,
+          "unit": "kPa",
+          "encoding": {},
+          "group": "OBD-II",
+          "min": 0,
+          "max": 255
+        },
+        {
+          "id": "iat",
+          "name": "Intake air temperature",
+          "ident": 15,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 80
+        },
+        {
+          "id": "timing",
+          "name": "Ignition advance",
+          "ident": 14,
+          "unit": "°",
+          "encoding": {
+            "scale": 0.5,
+            "offset": -64,
+            "decimals": 1
+          },
+          "group": "OBD-II",
+          "min": -10,
+          "max": 50
+        },
+        {
+          "id": "runtime",
+          "name": "Time since start",
+          "ident": 31,
+          "unit": "s",
+          "encoding": {
+            "length": 2
+          },
+          "group": "OBD-II"
+        },
+        {
+          "id": "fuel",
+          "name": "Fuel level",
+          "ident": 47,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "ambient",
+          "name": "Ambient temperature",
+          "ident": 70,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 50
+        },
+        {
+          "id": "oil",
+          "name": "Oil temperature",
+          "ident": 92,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 150
+        }
+      ]
+    },
+    {
+      "id": "engine",
+      "name": "Engine control",
+      "shortName": "DME",
+      "address": "0x12",
+      "protocol": "uds",
+      "category": "engine",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "abs",
+      "name": "ABS",
+      "shortName": "ABS",
+      "address": "0x29",
+      "protocol": "uds",
+      "category": "abs",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "kombi",
+      "name": "Instrument cluster",
+      "shortName": "KOMBI",
+      "address": "0x60",
+      "protocol": "uds",
+      "category": "cluster",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    }
+  ]
+}

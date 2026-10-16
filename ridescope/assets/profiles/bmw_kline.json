@@ -1,0 +1,110 @@
+{
+  "id": "bmw-kline",
+  "name": "BMW, K-line models (about 2004–2016)",
+  "bus": "kline",
+  "years": "2004–2016",
+  "models": [
+    "R 1200 GS/RT/R/S (air/oil-cooled)",
+    "K 1200 / K 1300",
+    "F 650/700/800",
+    "G 650",
+    "S 1000 RR (to 2014)",
+    "HP2"
+  ],
+  "notes": "Starting point only. The control-unit addresses follow BMW's usual conventions and are not yet confirmed on this model: run Discovery › Find control units on your bike, then add what it finds. Writing is disabled until a profile is verified.",
+  "ecus": [
+    {
+      "id": "engine",
+      "name": "Engine control (BMS-K)",
+      "shortName": "BMS-K",
+      "address": "0x12",
+      "protocol": "kwp",
+      "category": "engine",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0x90"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0x87"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0x89"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0x8C"
+        }
+      ]
+    },
+    {
+      "id": "abs",
+      "name": "ABS",
+      "shortName": "ABS",
+      "address": "0x29",
+      "protocol": "kwp",
+      "category": "abs",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0x90"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0x87"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0x89"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0x8C"
+        }
+      ]
+    },
+    {
+      "id": "kombi",
+      "name": "Instrument cluster",
+      "shortName": "KOMBI",
+      "address": "0x60",
+      "protocol": "kwp",
+      "category": "cluster",
+      "verified": false,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0x90"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0x87"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0x89"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0x8C"
+        }
+      ]
+    }
+  ]
+}

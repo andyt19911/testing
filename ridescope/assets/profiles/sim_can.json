@@ -1,0 +1,1083 @@
+{
+  "id": "sim-can",
+  "name": "Demo bike — CAN (UDS)",
+  "bus": "can",
+  "simulator": true,
+  "years": "Simulator",
+  "models": [
+    "DEMO"
+  ],
+  "notes": "Simulated bike with every feature. Nothing is sent to a real motorcycle.",
+  "ecus": [
+    {
+      "id": "engine",
+      "name": "Engine control (BMS-X)",
+      "shortName": "BMS-X",
+      "address": "0x12",
+      "category": "engine",
+      "security": {
+        "level": 1,
+        "algorithm": "sim-xor"
+      },
+      "liveData": [
+        {
+          "id": "rpm",
+          "name": "Engine speed",
+          "ident": "0x4001",
+          "unit": "rpm",
+          "encoding": {
+            "length": 2
+          },
+          "group": "Engine",
+          "basic": true,
+          "min": 0,
+          "max": 9000
+        },
+        {
+          "id": "coolant",
+          "name": "Coolant temperature",
+          "ident": "0x4002",
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "Engine",
+          "basic": true,
+          "min": -20,
+          "max": 120
+        },
+        {
+          "id": "throttle",
+          "name": "Throttle position",
+          "ident": "0x4003",
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "Engine",
+          "basic": true,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "battery",
+          "name": "Battery voltage",
+          "ident": "0x4005",
+          "unit": "V",
+          "encoding": {
+            "length": 2,
+            "scale": 0.001,
+            "decimals": 2
+          },
+          "group": "Electrical",
+          "basic": true,
+          "min": 10,
+          "max": 16
+        },
+        {
+          "id": "iat",
+          "name": "Intake air temperature",
+          "ident": "0x4004",
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "Engine",
+          "min": -20,
+          "max": 80
+        },
+        {
+          "id": "gear",
+          "name": "Gear",
+          "ident": "0x4006",
+          "unit": "",
+          "encoding": {
+            "type": "enum",
+            "labels": {
+              "0": "N",
+              "1": "1",
+              "2": "2",
+              "3": "3",
+              "4": "4",
+              "5": "5",
+              "6": "6"
+            }
+          },
+          "group": "Engine"
+        },
+        {
+          "id": "lambda",
+          "name": "Lambda",
+          "ident": "0x4007",
+          "unit": "λ",
+          "encoding": {
+            "length": 2,
+            "scale": 0.0001,
+            "decimals": 3
+          },
+          "group": "Engine",
+          "min": 0.7,
+          "max": 1.3
+        },
+        {
+          "id": "oil",
+          "name": "Oil temperature",
+          "ident": "0x4008",
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "Engine",
+          "min": -20,
+          "max": 150
+        }
+      ],
+      "dtcText": {
+        "2A9400": "Intake air temperature sensor: implausible signal"
+      },
+      "procedures": [
+        {
+          "id": "throttle_adapt",
+          "name": "Reset throttle adaptation",
+          "kind": "adaptation",
+          "description": "Clears the learned throttle-valve values, e.g. after cleaning or replacing the throttle body.",
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "routine",
+              "ident": "0xA001",
+              "label": "Resetting adaptation values"
+            }
+          ],
+          "successMessage": "Switch the ignition off for 10 seconds, then start the engine and let it idle for 3 minutes without touching the throttle.",
+          "verified": true
+        },
+        {
+          "id": "gear_teach",
+          "name": "Teach-in gear position sensor",
+          "kind": "calibration",
+          "description": "Teaches the neutral position after the gear sensor was replaced or adjusted.",
+          "preconditions": {
+            "extra": [
+              "Gearbox is in neutral"
+            ]
+          },
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "prompt",
+              "message": "Put the gearbox in neutral, then tap Continue."
+            },
+            {
+              "op": "routine",
+              "ident": "0xA002",
+              "label": "Learning neutral position"
+            }
+          ],
+          "verified": true
+        }
+      ],
+      "protocol": "uds",
+      "verified": true,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "abs",
+      "name": "ABS (Integral ABS)",
+      "shortName": "ABS",
+      "address": "0x29",
+      "category": "abs",
+      "security": {
+        "level": 1,
+        "algorithm": "sim-xor"
+      },
+      "liveData": [
+        {
+          "id": "v_front",
+          "name": "Front wheel speed",
+          "ident": "0x4101",
+          "unit": "km/h",
+          "encoding": {
+            "length": 2,
+            "scale": 0.1,
+            "decimals": 1
+          },
+          "group": "Brakes",
+          "min": 0,
+          "max": 250
+        },
+        {
+          "id": "v_rear",
+          "name": "Rear wheel speed",
+          "ident": "0x4102",
+          "unit": "km/h",
+          "encoding": {
+            "length": 2,
+            "scale": 0.1,
+            "decimals": 1
+          },
+          "group": "Brakes",
+          "min": 0,
+          "max": 250
+        },
+        {
+          "id": "pressure",
+          "name": "Brake pressure",
+          "ident": "0x4103",
+          "unit": "bar",
+          "encoding": {},
+          "group": "Brakes",
+          "min": 0,
+          "max": 200
+        }
+      ],
+      "dtcText": {
+        "5E2101": "Front wheel speed sensor: no signal"
+      },
+      "procedures": [
+        {
+          "id": "bleed_front",
+          "name": "Bleed front brake circuit",
+          "kind": "bleed",
+          "description": "Cycles the ABS pressure modulator so trapped air leaves the front circuit.",
+          "preconditions": {
+            "extra": [
+              "Bike is on its centre stand",
+              "Bleeding bottle is connected to the front calipers"
+            ]
+          },
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "prompt",
+              "message": "Open the front caliper bleed screws and keep the reservoir topped up."
+            },
+            {
+              "op": "routine",
+              "ident": "0xB001",
+              "label": "Cycling front modulator"
+            },
+            {
+              "op": "prompt",
+              "message": "Pull and hold the front brake lever, then tap Continue."
+            },
+            {
+              "op": "routine",
+              "ident": "0xB001",
+              "label": "Cycling front modulator (2)"
+            },
+            {
+              "op": "prompt",
+              "message": "Close the bleed screws and top up the reservoir to MAX."
+            }
+          ],
+          "successMessage": "Check the lever is firm before you ride.",
+          "verified": true
+        },
+        {
+          "id": "bleed_rear",
+          "name": "Bleed rear brake circuit",
+          "kind": "bleed",
+          "description": "Cycles the ABS pressure modulator so trapped air leaves the rear circuit.",
+          "preconditions": {
+            "extra": [
+              "Bike is on its centre stand",
+              "Bleeding bottle is connected to the rear caliper"
+            ]
+          },
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "prompt",
+              "message": "Open the rear caliper bleed screw and keep the reservoir topped up."
+            },
+            {
+              "op": "routine",
+              "ident": "0xB002",
+              "label": "Cycling rear modulator"
+            },
+            {
+              "op": "prompt",
+              "message": "Press and hold the rear brake pedal, then tap Continue."
+            },
+            {
+              "op": "routine",
+              "ident": "0xB002",
+              "label": "Cycling rear modulator (2)"
+            },
+            {
+              "op": "prompt",
+              "message": "Close the bleed screw and top up the reservoir."
+            }
+          ],
+          "successMessage": "Check the pedal is firm before you ride.",
+          "verified": true
+        },
+        {
+          "id": "pump_test",
+          "name": "ABS pump motor test",
+          "kind": "actuator",
+          "description": "Runs the ABS pump for two seconds. You should hear it.",
+          "steps": [
+            {
+              "op": "session"
+            },
+            {
+              "op": "io",
+              "ident": "0xB010",
+              "param": 3,
+              "data": "01",
+              "label": "Pump on"
+            },
+            {
+              "op": "wait",
+              "ms": 2000,
+              "label": "Pump running"
+            },
+            {
+              "op": "io",
+              "ident": "0xB010",
+              "param": 0,
+              "label": "Pump off"
+            }
+          ],
+          "verified": true
+        }
+      ],
+      "protocol": "uds",
+      "verified": true,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "zfe",
+      "name": "Central electronics (ZFE)",
+      "shortName": "ZFE",
+      "address": "0x40",
+      "category": "body",
+      "security": {
+        "level": 1,
+        "algorithm": "sim-xor"
+      },
+      "liveData": [
+        {
+          "id": "fuel",
+          "name": "Fuel level",
+          "ident": "0x4201",
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "Body",
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "coding": [
+        {
+          "id": "zfe_main",
+          "name": "Equipment",
+          "ident": "0x3100",
+          "length": 6,
+          "params": [
+            {
+              "id": "tpms",
+              "name": "Tyre pressure monitoring (RDC)",
+              "byte": 0,
+              "mask": "0x01",
+              "description": "Switch off if the TPMS sensors were removed, so the warning light stays off. The instrument cluster is changed with it.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Not fitted"
+                },
+                {
+                  "value": 1,
+                  "label": "Fitted"
+                }
+              ],
+              "linked": [
+                {
+                  "ecu": "kombi",
+                  "param": "tpms_display",
+                  "map": {
+                    "0": 0,
+                    "1": 1
+                  }
+                }
+              ]
+            },
+            {
+              "id": "heated_grips",
+              "name": "Heated grips",
+              "byte": 1,
+              "mask": "0x01",
+              "description": "Tell the bike heated grips are fitted.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Not fitted"
+                },
+                {
+                  "value": 1,
+                  "label": "Fitted"
+                }
+              ]
+            },
+            {
+              "id": "cruise",
+              "name": "Cruise control",
+              "byte": 1,
+              "mask": "0x02",
+              "description": "Only switch on if the cruise control switch unit is fitted.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Not fitted"
+                },
+                {
+                  "value": 2,
+                  "label": "Fitted"
+                }
+              ],
+              "risk": "medium"
+            },
+            {
+              "id": "aux_lights",
+              "name": "Auxiliary lights",
+              "byte": 2,
+              "mask": "0x03",
+              "description": "Type of auxiliary lights connected to the ZFE.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Not fitted"
+                },
+                {
+                  "value": 1,
+                  "label": "LED auxiliary lights"
+                },
+                {
+                  "value": 2,
+                  "label": "Halogen fog lights"
+                }
+              ],
+              "risk": "medium",
+              "warning": "The wrong type can trigger a bulb fault warning."
+            },
+            {
+              "id": "welcome_light",
+              "name": "Welcome light",
+              "byte": 3,
+              "mask": "0x01",
+              "description": "Low beam comes on briefly when you unlock the bike.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Off"
+                },
+                {
+                  "value": 1,
+                  "label": "On"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "procedures": [
+        {
+          "id": "fuel_cal",
+          "name": "Calibrate fuel level sensor",
+          "kind": "calibration",
+          "description": "Re-learns the full-tank reading after the fuel sensor was replaced.",
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "prompt",
+              "message": "Fill the tank to the brim, then tap Continue."
+            },
+            {
+              "op": "routine",
+              "ident": "0xC001",
+              "label": "Learning full tank"
+            }
+          ],
+          "verified": true
+        },
+        {
+          "id": "esa_cal",
+          "name": "Calibrate ESA ride height",
+          "kind": "calibration",
+          "description": "Sets the reference ride height of the electronic suspension.",
+          "preconditions": {
+            "extra": [
+              "Bike is upright on level ground",
+              "No rider or luggage"
+            ]
+          },
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "routine",
+              "ident": "0xC002",
+              "label": "Measuring ride height"
+            }
+          ],
+          "verified": true
+        }
+      ],
+      "protocol": "uds",
+      "verified": true,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "kombi",
+      "name": "Instrument cluster (KOMBI)",
+      "shortName": "KOMBI",
+      "address": "0x60",
+      "category": "cluster",
+      "security": {
+        "level": 1,
+        "algorithm": "sim-xor"
+      },
+      "liveData": [
+        {
+          "id": "odo",
+          "name": "Odometer",
+          "ident": "0x4310",
+          "unit": "km",
+          "encoding": {
+            "length": 3
+          },
+          "group": "Service"
+        },
+        {
+          "id": "service_km",
+          "name": "Service due in",
+          "ident": "0x5002",
+          "unit": "km",
+          "encoding": {
+            "length": 3
+          },
+          "group": "Service"
+        }
+      ],
+      "coding": [
+        {
+          "id": "kombi_main",
+          "name": "Display",
+          "ident": "0x3000",
+          "length": 8,
+          "params": [
+            {
+              "id": "units",
+              "name": "Distance unit",
+              "byte": 0,
+              "mask": "0x01",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Kilometres"
+                },
+                {
+                  "value": 1,
+                  "label": "Miles"
+                }
+              ]
+            },
+            {
+              "id": "clock",
+              "name": "Clock format",
+              "byte": 0,
+              "mask": "0x02",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "24-hour"
+                },
+                {
+                  "value": 2,
+                  "label": "12-hour"
+                }
+              ]
+            },
+            {
+              "id": "temp_unit",
+              "name": "Temperature unit",
+              "byte": 0,
+              "mask": "0x04",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "°C"
+                },
+                {
+                  "value": 4,
+                  "label": "°F"
+                }
+              ]
+            },
+            {
+              "id": "tpms_display",
+              "name": "Tyre pressure display",
+              "byte": 1,
+              "mask": "0x01",
+              "description": "Shows tyre pressures in the cluster. Changed together with TPMS in the ZFE.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Off"
+                },
+                {
+                  "value": 1,
+                  "label": "On"
+                }
+              ]
+            },
+            {
+              "id": "drl",
+              "name": "Daytime running light",
+              "byte": 1,
+              "mask": "0x06",
+              "description": "How the daytime running light behaves.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Off"
+                },
+                {
+                  "value": 2,
+                  "label": "Automatic"
+                },
+                {
+                  "value": 4,
+                  "label": "Always on"
+                }
+              ],
+              "warning": "Check your local road rules before turning it off."
+            },
+            {
+              "id": "shift_light",
+              "name": "Shift light",
+              "byte": 2,
+              "mask": "0x0F",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Off"
+                },
+                {
+                  "value": 7,
+                  "label": "7 000 rpm"
+                },
+                {
+                  "value": 8,
+                  "label": "8 000 rpm"
+                },
+                {
+                  "value": 9,
+                  "label": "9 000 rpm"
+                }
+              ]
+            },
+            {
+              "id": "service_display",
+              "name": "Service reminder in display",
+              "byte": 3,
+              "mask": "0x01",
+              "description": "Hides the service reminder. It doesn't change the service interval.",
+              "options": [
+                {
+                  "value": 0,
+                  "label": "Shown"
+                },
+                {
+                  "value": 1,
+                  "label": "Hidden"
+                }
+              ],
+              "risk": "medium"
+            }
+          ]
+        }
+      ],
+      "procedures": [
+        {
+          "id": "service_reset",
+          "name": "Reset service reminder",
+          "kind": "service",
+          "description": "Sets the next service date and distance after a service.",
+          "needsLongMessages": true,
+          "inputs": [
+            {
+              "id": "distance",
+              "label": "Next service in",
+              "default": 10000,
+              "min": 1000,
+              "max": 30000,
+              "step": 1000,
+              "unit": "km"
+            },
+            {
+              "id": "months",
+              "label": "or after",
+              "default": 12,
+              "min": 1,
+              "max": 24,
+              "step": 1,
+              "unit": "months"
+            }
+          ],
+          "status": [
+            {
+              "id": "due_date",
+              "name": "Service due on",
+              "ident": "0x5001",
+              "encoding": {
+                "type": "date",
+                "length": 4
+              }
+            },
+            {
+              "id": "due_km",
+              "name": "Service due in",
+              "ident": "0x5002",
+              "encoding": {
+                "length": 3
+              },
+              "unit": "km"
+            }
+          ],
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "write",
+              "ident": "0x5001",
+              "data": "{due.dd|bcd8}{due.mm|bcd8}{due.yyyy|bcd16}",
+              "label": "Writing next service date"
+            },
+            {
+              "op": "write",
+              "ident": "0x5002",
+              "data": "{input.distance|u24}",
+              "label": "Writing next service distance"
+            },
+            {
+              "op": "routine",
+              "ident": "0x5100",
+              "label": "Confirming service"
+            },
+            {
+              "op": "verify",
+              "ident": "0x5001",
+              "data": "{due.dd|bcd8}{due.mm|bcd8}{due.yyyy|bcd16}"
+            }
+          ],
+          "successMessage": "The service reminder was reset.",
+          "verified": true
+        },
+        {
+          "id": "set_date",
+          "name": "Set cluster date and time",
+          "kind": "date",
+          "description": "Copies the phone's date and time to the instrument cluster. The service reset needs a correct date.",
+          "needsLongMessages": true,
+          "status": [
+            {
+              "id": "date",
+              "name": "Cluster date",
+              "ident": "0x5003",
+              "encoding": {
+                "type": "date",
+                "length": 6
+              }
+            }
+          ],
+          "steps": [
+            {
+              "op": "security"
+            },
+            {
+              "op": "write",
+              "ident": "0x5003",
+              "data": "{today.dd|bcd8}{today.mm|bcd8}{today.yyyy|bcd16}{today.HH|bcd8}{today.MI|bcd8}",
+              "label": "Writing date and time"
+            }
+          ],
+          "verified": true
+        }
+      ],
+      "protocol": "uds",
+      "verified": true,
+      "identification": [
+        {
+          "id": "vin",
+          "name": "VIN",
+          "ident": "0xF190"
+        },
+        {
+          "id": "part",
+          "name": "Part number",
+          "ident": "0xF187"
+        },
+        {
+          "id": "sw",
+          "name": "Software",
+          "ident": "0xF189"
+        },
+        {
+          "id": "serial",
+          "name": "Serial number",
+          "ident": "0xF18C"
+        }
+      ]
+    },
+    {
+      "id": "obd",
+      "name": "Engine (OBD-II standard data)",
+      "shortName": "OBD",
+      "address": "0x7DF",
+      "protocol": "obd",
+      "category": "obd",
+      "verified": true,
+      "liveData": [
+        {
+          "id": "rpm",
+          "name": "Engine speed",
+          "ident": 12,
+          "unit": "rpm",
+          "encoding": {
+            "length": 2,
+            "scale": 0.25
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 0,
+          "max": 9000
+        },
+        {
+          "id": "coolant",
+          "name": "Coolant temperature",
+          "ident": 5,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": -20,
+          "max": 120
+        },
+        {
+          "id": "throttle",
+          "name": "Throttle position",
+          "ident": 17,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "battery",
+          "name": "Control module voltage",
+          "ident": 66,
+          "unit": "V",
+          "encoding": {
+            "length": 2,
+            "scale": 0.001,
+            "decimals": 2
+          },
+          "group": "OBD-II",
+          "basic": true,
+          "min": 10,
+          "max": 16
+        },
+        {
+          "id": "speed",
+          "name": "Vehicle speed",
+          "ident": 13,
+          "unit": "km/h",
+          "encoding": {},
+          "group": "OBD-II",
+          "min": 0,
+          "max": 250
+        },
+        {
+          "id": "load",
+          "name": "Engine load",
+          "ident": 4,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "map",
+          "name": "Intake pressure",
+          "ident": 11,
+          "unit": "kPa",
+          "encoding": {},
+          "group": "OBD-II",
+          "min": 0,
+          "max": 255
+        },
+        {
+          "id": "iat",
+          "name": "Intake air temperature",
+          "ident": 15,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 80
+        },
+        {
+          "id": "timing",
+          "name": "Ignition advance",
+          "ident": 14,
+          "unit": "°",
+          "encoding": {
+            "scale": 0.5,
+            "offset": -64,
+            "decimals": 1
+          },
+          "group": "OBD-II",
+          "min": -10,
+          "max": 50
+        },
+        {
+          "id": "runtime",
+          "name": "Time since start",
+          "ident": 31,
+          "unit": "s",
+          "encoding": {
+            "length": 2
+          },
+          "group": "OBD-II"
+        },
+        {
+          "id": "fuel",
+          "name": "Fuel level",
+          "ident": 47,
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "OBD-II",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "ambient",
+          "name": "Ambient temperature",
+          "ident": 70,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 50
+        },
+        {
+          "id": "oil",
+          "name": "Oil temperature",
+          "ident": 92,
+          "unit": "°C",
+          "encoding": {
+            "offset": -40
+          },
+          "group": "OBD-II",
+          "min": -20,
+          "max": 150
+        }
+      ]
+    }
+  ]
+}
