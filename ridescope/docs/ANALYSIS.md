@@ -146,7 +146,7 @@ documented in the BMW-published repair information for that model.
 | Find ECUs, identification, VIN | ✓ | ✓ | ✓ |
 | Read faults | ✓ | ✓ | ✓ |
 | Clear faults | – | ✓ | ✓ |
-| Live data | 4 basic values | All values, charts, recording, CSV | ✓ |
+| Live data | Basic values (RPM, temperatures, throttle, battery) | All values, charts, recording, CSV | ✓ |
 | Freeze frames, health report | – | ✓ | ✓ |
 | Service reset, set cluster date | – | ✓ | ✓ |
 | Coding (with backup/restore) | – | – | ✓ |

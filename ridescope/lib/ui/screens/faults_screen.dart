@@ -167,7 +167,7 @@ class _FaultCard extends StatelessWidget {
                   Row(children: [
                     Text(f.code, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w800, fontSize: 16)),
                     const SizedBox(width: 8),
-                    Flexible(child: Pill(f.severity.label, color: c)),
+                    Pill(f.severity.label, color: c),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(_state(f.dtc.state),

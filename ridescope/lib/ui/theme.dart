@@ -21,6 +21,7 @@ class AppTheme {
       primary: accent,
       surface: dark ? const Color(0xFF0E1116) : const Color(0xFFF6F7F9),
     ).copyWith(
+      onPrimary: Colors.white,
       surfaceContainerLow: dark ? const Color(0xFF151A21) : Colors.white,
       surfaceContainer: dark ? const Color(0xFF1A2029) : const Color(0xFFEFF1F4),
       surfaceContainerHigh: dark ? const Color(0xFF222A35) : const Color(0xFFE6E9EE),
