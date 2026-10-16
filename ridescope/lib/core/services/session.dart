@@ -25,7 +25,7 @@ class DiagnosticSession {
     required this.profile,
     required Tier Function() tier,
     this.expertMode = false,
-  }) : _tier = tier;
+  }) : _tier = tier; // ignore: prefer_initializing_formals
 
   final Elm327Adapter adapter;
   final BikeProfile profile;
@@ -84,7 +84,7 @@ class DiagnosticSession {
         final v = await obd.readVin();
         final pids = await obd.supportedPids();
         s = EcuStatus(ecu, present: pids.isNotEmpty, identity: {
-          if (v != null) 'VIN': v,
+          'VIN': ?v,
           'Supported values': '${pids.length}',
         });
         vin ??= v;

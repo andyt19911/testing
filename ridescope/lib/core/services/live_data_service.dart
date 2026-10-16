@@ -31,6 +31,7 @@ class LiveDataService {
   final Map<String, LiveSample> latest = {};
   List<LiveChannel> _channels = [];
   bool _running = false;
+  int _generation = 0;
   bool get running => _running;
 
   bool recording = false;
@@ -72,20 +73,23 @@ class LiveDataService {
     _channels = channels;
     if (_running) return;
     _running = true;
-    unawaited(_loop());
+    unawaited(_loop(++_generation));
   }
 
   void updateChannels(List<LiveChannel> channels) => start(channels);
 
-  Future<void> _loop() async {
+  Future<void> _loop(int generation) async {
     var errors = 0;
-    while (_running) {
+    // A stop() followed quickly by start() begins a new generation; the old
+    // loop must not keep polling alongside it.
+    bool alive() => _running && generation == _generation;
+    while (alive()) {
       if (_channels.isEmpty) {
         await Future<void>.delayed(const Duration(milliseconds: 200));
         continue;
       }
       for (final ch in List.of(_channels)) {
-        if (!_running) break;
+        if (!alive()) break;
         try {
           final s = await readOnce(ch);
           errors = 0;
