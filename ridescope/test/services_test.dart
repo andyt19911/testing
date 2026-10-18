@@ -160,7 +160,6 @@ void main() {
 
       test('exhaust flap: live position reads back', () async {
         final (s, bike) = await open(id);
-        final eng = s.profile.ecu('engine')!;
         bike.flapFreed = true;
         bike.flapCommandPct = 100;
         final chans = LiveDataService.available(s);
