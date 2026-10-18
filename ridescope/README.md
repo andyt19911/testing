@@ -30,6 +30,11 @@ android/.../SppPlugin.kt   Native RFCOMM link for Bluetooth Classic adapters
 tool/license_tool.dart     Create signing keys and licence keys
 ```
 
+## Installing on an Android phone
+
+See [docs/BUILD_ANDROID.md](docs/BUILD_ANDROID.md): download the APK that
+GitHub Actions builds on every push, or build it on your own computer.
+
 ## Running it
 
 ```sh

@@ -122,7 +122,7 @@ class SppPlugin(private val context: Context, messenger: BinaryMessenger) :
                     val chunk = buf.copyOf(n)
                     main.post { sink?.success(chunk) }
                 }
-            } catch (_: IOException) {
+            } catch (e: IOException) {
                 // Socket closed.
             }
             main.post { sink?.error("closed", "Adapter disconnected", null) }
@@ -135,7 +135,7 @@ class SppPlugin(private val context: Context, messenger: BinaryMessenger) :
     private fun close() {
         try {
             socket?.close()
-        } catch (_: IOException) {
+        } catch (e: IOException) {
         }
         socket = null
         reader = null

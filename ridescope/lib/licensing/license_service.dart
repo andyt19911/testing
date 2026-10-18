@@ -3,6 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'license_token.dart';
 import 'tier.dart';
 
+/// Set with `--dart-define=RIDESCOPE_TESTER=true` for builds handed to
+/// testers: allows unlocking paid tiers on the device, like debug builds.
+/// Never set it for store builds.
+const bool testerBuild = bool.fromEnvironment('RIDESCOPE_TESTER');
+
+/// Whether the developer tier unlock is available in this build.
+bool get developerUnlockAvailable => kDebugMode || testerBuild;
+
 /// Minimal key-value persistence, so the service can be tested without
 /// platform plugins.
 abstract class KeyValueStore {
@@ -107,9 +115,10 @@ class LicenseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Debug builds only: lets developers test paid features on a real bike.
+  /// Debug and tester builds only: lets developers test paid features on a
+  /// real bike.
   void setDeveloperTier(Tier t) {
-    if (!kDebugMode) return;
+    if (!developerUnlockAvailable) return;
     _devTier = t;
     notifyListeners();
   }

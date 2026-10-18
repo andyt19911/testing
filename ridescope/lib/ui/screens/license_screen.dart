@@ -1,8 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../app/app_state.dart';
+import '../../licensing/license_service.dart';
 import '../../licensing/purchase_service.dart';
 import '../../licensing/tier.dart';
 import '../theme.dart';
@@ -132,8 +132,8 @@ class _LicenseScreenState extends State<LicenseScreen> {
               child: const Text('Remove'),
             ),
           ),
-        if (kDebugMode) ...[
-          const SectionHeader('Developer (debug builds only)'),
+        if (developerUnlockAvailable) ...[
+          SectionHeader(testerBuild ? 'Tester build' : 'Developer (debug builds only)'),
           Wrap(spacing: 8, children: [
             for (final t in Tier.values) OutlinedButton(onPressed: () => lic.setDeveloperTier(t), child: Text('Unlock ${t.label}')),
           ]),
