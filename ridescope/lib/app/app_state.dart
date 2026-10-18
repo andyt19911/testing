@@ -150,6 +150,11 @@ class AppState extends ChangeNotifier {
       s.offRoadMode = offRoadMode;
       _step(ConnectStep.units);
       await s.scan();
+      // Test the adapter's real send capability now (not from its ELM version
+      // string), so the dashboard and write functions reflect what it can do.
+      try {
+        await s.probeLongMessages();
+      } catch (_) {}
       if (s.vin != null && !profile.simulator) {
         final ok = await license.registerVin(s.vin!);
         bikeNotLicensed = !ok && license.tier != Tier.free;

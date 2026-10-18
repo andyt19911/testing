@@ -7,7 +7,13 @@ import '../util/hex.dart';
 import 'virtual_bike.dart';
 
 /// Which adapter the simulator pretends to be.
-enum SimAdapter { stn, clone }
+///
+///  * [stn] — OBDLink/STN: long messages via STPX.
+///  * [clone] — a cheap ELM327 that cannot send multi-frame messages.
+///  * [capableClone] — reports only as "ELM327 v2.1" with no STN commands, but
+///    handles multi-frame sends. Models the UniCarScan UCSI-2100, which the
+///    name alone would otherwise mistake for an incapable clone.
+enum SimAdapter { stn, clone, capableClone }
 
 /// Emulates an ELM327/STN adapter plugged into a [VirtualBike]. Speaks the
 /// same text protocol as the real hardware so the full stack is exercised.
@@ -39,7 +45,14 @@ class SimulatedTransport implements ByteTransport {
 
   @override
   String get displayName =>
-      adapter == SimAdapter.stn ? 'Demo bike (OBDLink)' : 'Demo bike (ELM327 clone)';
+      switch (adapter) {
+        SimAdapter.stn => 'Demo bike (OBDLink)',
+        SimAdapter.clone => 'Demo bike (ELM327 clone)',
+        SimAdapter.capableClone => 'Demo bike (UniCarScan-style)',
+      };
+
+  /// Whether this adapter can transmit multi-frame messages.
+  bool get _canSendLong => adapter != SimAdapter.clone;
 
   @override
   bool get isOpen => _open;
@@ -82,7 +95,11 @@ class SimulatedTransport implements ByteTransport {
     return _request(fromHex(hex), long: false);
   }
 
-  String get _identity => adapter == SimAdapter.stn ? 'ELM327 v1.4b' : 'ELM327 v1.5';
+  String get _identity => switch (adapter) {
+        SimAdapter.stn => 'ELM327 v1.4b',
+        SimAdapter.clone => 'ELM327 v1.5',
+        SimAdapter.capableClone => 'ELM327 v2.1',
+      };
 
   String _at(String c) {
     if (c == 'Z' || c == 'WS') {
@@ -154,7 +171,7 @@ class SimulatedTransport implements ByteTransport {
     if (bike.bus != SimBus.can) return 'NO DATA';
     final functional = _header.isNotEmpty && _header[0] == 0x7DF && _cea == null;
     final maxSingle = functional ? 7 : 6;
-    if (!long && payload.length > maxSingle) return '?';
+    if (!long && !_canSendLong && payload.length > maxSingle) return '?';
     if (functional) {
       final r = bike.obdRequest(payload);
       if (r == null) return 'NO DATA';
@@ -174,7 +191,7 @@ class SimulatedTransport implements ByteTransport {
 
   String _kLine(List<int> payload, {required bool long}) {
     if (bike.bus != SimBus.kLine) return 'BUS INIT: ...ERROR';
-    if (!long && payload.length > 7) return '?';
+    if (!long && !_canSendLong && payload.length > 7) return '?';
     if (_header.length != 3) return 'NO DATA';
     final target = _header[1];
     if (!_kLineInitialised) {

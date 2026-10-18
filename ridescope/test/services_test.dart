@@ -220,6 +220,19 @@ void main() {
   });
 
   group('safety', () {
+    test('capable v2.1 adapter (UniCarScan-style) is recognised and allowed to write', () async {
+      final (s, _) = await open('sim-can', adapter: SimAdapter.capableClone);
+      // Its ELM version string looks like a clone...
+      expect(s.adapterInfo.family, AdapterFamily.clone);
+      // ...but the capability test proves it can send long messages.
+      expect(await s.probeLongMessages(), isTrue);
+      expect(s.adapterInfo.canSendLongMessages, isTrue);
+      final kombi = s.profile.ecu('kombi')!;
+      final proc = kombi.procedures.firstWhere((p) => p.id == 'service_reset');
+      final pre = await Preflight(s).forProcedure(kombi, proc);
+      expect(pre.blocked, isFalse, reason: pre.checks.map((c) => '${c.label}:${c.detail}').join(', '));
+    });
+
     test('clone adapter blocks service reset in preflight', () async {
       final (s, _) = await open('sim-can', adapter: SimAdapter.clone);
       final kombi = s.profile.ecu('kombi')!;

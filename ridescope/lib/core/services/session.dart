@@ -125,8 +125,13 @@ class DiagnosticSession {
       profile.ecus.where((e) => status[e.id]?.present ?? true);
 
   /// Sends a harmless, longer-than-one-frame read to find out whether the
-  /// adapter can transmit long messages. Any reply from the ECU, even a
+  /// adapter can transmit multi-frame messages. Any reply from the ECU, even a
   /// negative one, proves the message went out.
+  ///
+  /// A reply means "yes" (sticky). An explicit adapter refusal means "no"
+  /// (sticky). Silence is inconclusive — left untested so a real write can try
+  /// again — because the ECU, not the adapter, may simply not answer this
+  /// particular probe.
   Future<bool> probeLongMessages() async {
     final info = adapterInfo;
     if (info.isStn) return info.longMessagesVerified = true;
@@ -135,16 +140,22 @@ class DiagnosticSession {
     final payload = ecu.protocol == EcuProtocol.uds
         ? [0x22, 0xF1, 0x90, 0xF1, 0x8C, 0xF1, 0x87, 0xF1, 0x89]
         : [0x1A, 0x80, 0, 0, 0, 0, 0, 0, 0];
-    info.longMessagesVerified = true;
+    info.longMessagesVerified = true; // optimistic, so the send is attempted
     try {
       final msgs = await adapter.sendTo(ecu.target, payload);
       final ok = msgs.any((m) => m.source == ecu.address);
-      info.longMessagesVerified = ok;
-      log.info('Long message test: ${ok ? 'passed' : 'no reply'}');
+      // Reply → confirmed. Silence → inconclusive (retry at write time).
+      info.longMessagesVerified = ok ? true : null;
+      log.info('Long message test: ${ok ? 'passed' : 'no reply (will retry at write)'}');
       return ok;
-    } on AdapterException catch (e) {
+    } on AdapterLimitException catch (e) {
       info.longMessagesVerified = false;
-      log.info('Long message test failed: $e');
+      log.info('Long message test: adapter cannot send long messages ($e)');
+      return false;
+    } on AdapterException catch (e) {
+      // Adapter rejected the command itself (e.g. "?"): treat as short-only.
+      info.longMessagesVerified = false;
+      log.info('Long message test refused by adapter: $e');
       return false;
     }
   }

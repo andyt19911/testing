@@ -16,8 +16,8 @@ extension AdapterFamilyLabel on AdapterFamily {
         AdapterFamily.stn => 'OBDLink / STN',
         AdapterFamily.uniCarScan => 'UniCarScan',
         AdapterFamily.genuineElm => 'ELM327',
-        AdapterFamily.clone => 'ELM327 clone',
-        AdapterFamily.unknown => 'Unknown adapter',
+        AdapterFamily.clone => 'ELM327-compatible',
+        AdapterFamily.unknown => 'OBD adapter',
       };
 }
 
@@ -43,11 +43,23 @@ class AdapterInfo {
 
   /// Whether messages longer than a single frame can be sent. Needed for
   /// writing the cluster date, service data and most coding blocks.
+  ///
+  /// STN adapters always can. For everything else this is decided by the
+  /// actual [DiagnosticSession.probeLongMessages] test, not by the ELM version
+  /// string — many capable adapters (e.g. UniCarScan UCSI-2100) report only as
+  /// "ELM327 v2.1", so the name alone must never gate write functions.
   bool get canSendLongMessages => isStn || longMessagesVerified == true;
 
+  /// Plain-language capability once tested.
+  String get capabilityLabel => switch (longMessagesVerified) {
+        true => 'full messages',
+        false => 'short messages only',
+        null => isStn ? 'full messages' : 'capability not tested yet',
+      };
+
   String get summary => [
-        family.label,
         if (stnIdentity != null) stnIdentity! else identity,
+        capabilityLabel,
       ].join(' · ');
 }
 
