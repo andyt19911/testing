@@ -379,7 +379,11 @@ class ProcedureStep {
       );
 
   /// `session`, `security`, `write`, `verify`, `read`, `routine`, `io`,
-  /// `wait`, `prompt`, `reset`, `clearDtcs`.
+  /// `wait`, `prompt`, `reset`, `clearDtcs`, `hold`.
+  ///
+  /// `hold` drives an actuator (like `io`) and keeps re-asserting it until the
+  /// rider taps Stop, then returns control to the ECU. Used to hold the
+  /// exhaust flap open for a dyno run or a bench check.
   final String op;
   final int? ident;
   final String? data;
@@ -432,6 +436,7 @@ class ProcedureDef {
     this.inputs = const [],
     this.statusReads = const [],
     this.successMessage,
+    this.offRoadOnly = false,
   }) : tier = tier ?? kind.defaultTier;
 
   factory ProcedureDef.fromJson(Map<String, dynamic> j) {
@@ -449,6 +454,7 @@ class ProcedureDef {
       steps: _list(j['steps']).map(ProcedureStep.fromJson).toList(),
       statusReads: _list(j['status']).map(IdentField.fromJson).toList(),
       successMessage: j['successMessage'],
+      offRoadOnly: j['offRoadOnly'] ?? false,
     );
   }
 
@@ -467,7 +473,14 @@ class ProcedureDef {
   final List<IdentField> statusReads;
   final String? successMessage;
 
-  bool get writes => steps.any((s) => const {'write', 'routine', 'io', 'reset', 'clearDtcs'}.contains(s.op));
+  /// Closed-course / off-road only. Blocked unless the rider has turned on
+  /// track mode and accepted that it isn't for road use. It never hides a
+  /// fault or changes what the ECU monitors; the ECU resumes control when the
+  /// procedure ends.
+  final bool offRoadOnly;
+
+  bool get writes =>
+      steps.any((s) => const {'write', 'routine', 'io', 'reset', 'clearDtcs', 'hold'}.contains(s.op));
 }
 
 class SecurityDef {

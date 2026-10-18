@@ -60,7 +60,13 @@ class ProcedureTile extends StatelessWidget {
             },
             color: AppTheme.accent,
           ),
-          title: Text(procedure.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+          title: Row(children: [
+            Flexible(child: Text(procedure.name, style: const TextStyle(fontWeight: FontWeight.w700))),
+            if (procedure.offRoadOnly) ...[
+              const SizedBox(width: 8),
+              const Pill('Track', color: AppTheme.warn, icon: Icons.sports_motorsports_outlined),
+            ],
+          ]),
           subtitle: Text(present ? '${ecu.shortName} · ${procedure.description}' : '${ecu.name} not found on this bike',
               maxLines: 2, overflow: TextOverflow.ellipsis),
           trailing: locked ? TierBadge(procedure.tier) : const Icon(Icons.chevron_right),

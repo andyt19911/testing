@@ -36,6 +36,7 @@ class Preflight {
         needsLong: p.needsLongMessages,
         pre: p.preconditions,
         writes: p.writes,
+        offRoadOnly: p.offRoadOnly,
       );
 
   Future<PreflightResult> forCoding(List<EcuDef> ecus, {bool needsLong = true}) => _run(
@@ -56,12 +57,20 @@ class Preflight {
     required bool needsLong,
     required Preconditions pre,
     required bool writes,
+    bool offRoadOnly = false,
   }) async {
     final checks = <PreflightCheck>[];
     final required = tier.index > feature.minTier.index ? tier : feature.minTier;
     checks.add(session.tier.includes(required)
         ? PreflightCheck('Licence', CheckState.ok, session.tier.label)
         : PreflightCheck('Licence', CheckState.fail, 'Needs RideScope ${required.label}'));
+
+    if (offRoadOnly) {
+      checks.add(session.offRoadMode
+          ? PreflightCheck('Track mode', CheckState.ok, 'Closed-course use')
+          : PreflightCheck('Track mode', CheckState.fail,
+              'For closed-course use only. Turn on track mode in Settings.'));
+    }
 
     if (writes) {
       if (verified) {

@@ -131,12 +131,201 @@
           "group": "Engine",
           "min": -20,
           "max": 150
+        },
+        {
+          "id": "flap_actual",
+          "name": "Exhaust flap position",
+          "ident": "0x09",
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "Exhaust",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "flap_target",
+          "name": "Exhaust flap target",
+          "ident": "0x0A",
+          "unit": "%",
+          "encoding": {
+            "scale": 0.39215686274509803
+          },
+          "group": "Exhaust",
+          "min": 0,
+          "max": 100
+        },
+        {
+          "id": "flap_current",
+          "name": "Flap servo current",
+          "ident": "0x0B",
+          "unit": "A",
+          "encoding": {
+            "length": 2,
+            "scale": 0.01,
+            "decimals": 2
+          },
+          "group": "Exhaust",
+          "min": 0,
+          "max": 3
         }
       ],
       "dtcText": {
-        "2A94": "Intake air temperature sensor: implausible signal"
+        "2A94": "Intake air temperature sensor: implausible signal",
+        "2A87": "Exhaust flap actuator: position not reached (common when the valve is sticking)"
       },
       "procedures": [
+        {
+          "id": "exhaust_flap_test",
+          "name": "Exhaust flap actuator test",
+          "kind": "actuator",
+          "description": "Drives the exhaust flap (ex-valve) open and closed so you can see and hear it move. Watch Exhaust flap position and Flap servo current under Live data: high current with little movement means the valve is sticking.",
+          "steps": [
+            {
+              "op": "session"
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "FF",
+              "label": "Driving flap open"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "00",
+              "label": "Driving flap closed"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "FF",
+              "label": "Driving flap open"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 0,
+              "label": "Returning control to the ECU"
+            }
+          ],
+          "successMessage": "If the flap didn't reach full open or the current stayed high, try the Free & clean exhaust flap procedure.",
+          "verified": true
+        },
+        {
+          "id": "exhaust_flap_clean",
+          "name": "Free & clean exhaust flap",
+          "kind": "actuator",
+          "description": "Guided clean-and-recheck for a sticky ex-valve: lubricate, then cycle the actuator to work it free, then recheck that it reaches full travel.",
+          "preconditions": {
+            "extra": [
+              "Engine is cold",
+              "Bike is on its stand"
+            ]
+          },
+          "steps": [
+            {
+              "op": "session"
+            },
+            {
+              "op": "prompt",
+              "message": "With the engine off and cool, spray the flap spindle and cables with penetrating oil. Work the flap by hand if you can reach it."
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "FF",
+              "label": "Driving flap open"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "00",
+              "label": "Driving flap closed"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 3,
+              "data": "FF",
+              "label": "Driving flap open"
+            },
+            {
+              "op": "wait",
+              "ms": 1500
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 0,
+              "label": "Returning control to the ECU"
+            },
+            {
+              "op": "prompt",
+              "message": "Check Exhaust flap position in Live data: target and actual should now match and servo current should be low. If not, the servo or cables may need replacing."
+            }
+          ],
+          "successMessage": "If the flap now moves freely, clear any stored exhaust-flap fault and recheck after a ride.",
+          "verified": true
+        },
+        {
+          "id": "exhaust_flap_hold",
+          "name": "Hold exhaust flap open (track)",
+          "kind": "actuator",
+          "offRoadOnly": true,
+          "description": "Holds the ex-valve fully open for a dyno pull or bench check on a closed course. The ECU resumes control the moment you stop; this does not change what the ECU monitors and does not hide any fault, so it is not for road use.",
+          "preconditions": {
+            "extra": [
+              "Bike is on a dyno or stand, on a closed course"
+            ]
+          },
+          "steps": [
+            {
+              "op": "session"
+            },
+            {
+              "op": "hold",
+              "ident": "0x10",
+              "param": 3,
+              "data": "FF",
+              "message": "Exhaust flap held open. Tap Stop to return control to the ECU."
+            },
+            {
+              "op": "io",
+              "ident": "0x10",
+              "param": 0,
+              "label": "Returning control to the ECU"
+            }
+          ],
+          "successMessage": "Control returned to the ECU.",
+          "verified": true
+        },
         {
           "id": "throttle_adapt",
           "name": "Reset throttle adaptation",

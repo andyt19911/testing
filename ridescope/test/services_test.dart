@@ -141,6 +141,56 @@ void main() {
         final pre = await Preflight(s).forProcedure(kombi, kombi.procedures.first);
         expect(pre.blocked, isTrue);
       });
+
+      test('exhaust flap: actuator test drives the servo and frees a sticky flap', () async {
+        final (s, bike) = await open(id);
+        final eng = s.profile.ecu('engine')!;
+        final proc = eng.procedures.firstWhere((p) => p.id == 'exhaust_flap_test');
+        expect(bike.flapFreed, isFalse);
+        // Sticky flap can't reach full open before the test.
+        bike.flapCommandPct = 100;
+        expect(bike.flapActualPct, lessThan(60));
+        expect(bike.flapServoCurrent, greaterThan(1.0));
+        bike.flapCommandPct = null;
+        await ProcedureRunner(s).run(eng, proc, confirm: (_) async => true);
+        // Driving it fully open frees it and returns control to the ECU.
+        expect(bike.flapFreed, isTrue);
+        expect(bike.flapCommandPct, isNull);
+      });
+
+      test('exhaust flap: live position reads back', () async {
+        final (s, bike) = await open(id);
+        final eng = s.profile.ecu('engine')!;
+        bike.flapFreed = true;
+        bike.flapCommandPct = 100;
+        final chans = LiveDataService.available(s);
+        final actual = chans.firstWhere((c) => c.key == 'engine/flap_actual');
+        final current = chans.firstWhere((c) => c.key == 'engine/flap_current');
+        expect((await LiveDataService(s).readOnce(actual)).value, closeTo(100, 1));
+        expect((await LiveDataService(s).readOnce(current)).value, isNotNull);
+      });
+
+      test('exhaust flap: hold open needs track mode, then returns control', () async {
+        final (s, bike) = await open(id);
+        final eng = s.profile.ecu('engine')!;
+        final proc = eng.procedures.firstWhere((p) => p.id == 'exhaust_flap_hold');
+        expect(proc.offRoadOnly, isTrue);
+        // Blocked without track mode.
+        final pre = await Preflight(s).forProcedure(eng, proc);
+        expect(pre.blocked, isTrue);
+        await expectLater(
+          ProcedureRunner(s).run(eng, proc, confirm: (_) async => true, hold: (_) async {}),
+          throwsA(isA<StateError>()),
+        );
+        // With track mode on, the flap is held open, then control is returned.
+        s.offRoadMode = true;
+        var heldOpenDuringHold = false;
+        await ProcedureRunner(s).run(eng, proc, confirm: (_) async => true, hold: (_) async {
+          heldOpenDuringHold = bike.flapCommandPct == 100;
+        });
+        expect(heldOpenDuringHold, isTrue);
+        expect(bike.flapCommandPct, isNull, reason: 'control returned to the ECU');
+      });
     });
   }
 
@@ -217,7 +267,8 @@ void main() {
           .scanIdentifiers(const BusTarget(AddressingMode.canExtended, 0x12), List.generate(10, (i) => 0x4000 + i))
           .where((e) => e.$2 != null)
           .toList();
-      expect(hits.length, 8);
+      // 0x4001..0x4009 answer (engine live values incl. exhaust flap position).
+      expect(hits.length, 9);
     });
 
     test('finds ECUs on K-line', () async {

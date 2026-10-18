@@ -51,6 +51,26 @@ class VirtualBike {
   double get lambda => engineRunning ? 1.0 + sin(_t * 2.3) * 0.03 : 0;
   double get odometer => 12873 + _t * speed / 3600;
 
+  // Exhaust flap servo (ex-valve). Commanded position as a percentage, or
+  // null when the ECU controls it. The demo flap starts sticky, so it can't
+  // reach full open until it's been exercised fully a few times (modelling a
+  // seized valve that frees up once it's worked).
+  double? flapCommandPct;
+  bool flapFreed = false;
+
+  double get flapAutoTargetPct =>
+      engineRunning ? ((rpm - 3500) / 1800 * 100).clamp(0, 100).toDouble() : 0;
+  double get flapTargetPct => flapCommandPct ?? flapAutoTargetPct;
+  double get flapActualPct {
+    final t = flapTargetPct;
+    if (!flapFreed && t > 60) return 55; // sticky: can't reach full open
+    return t;
+  }
+
+  /// Higher while the servo strains against a sticky flap.
+  double get flapServoCurrent =>
+      (flapTargetPct - flapActualPct).abs() > 5 ? 1.8 : (flapTargetPct > 2 ? 0.5 : 0.2);
+
   List<int> _u8(num v) => [v.round().clamp(0, 255)];
   List<int> _u16(num v) => writeUnsigned(v.round().clamp(0, 65535), 2);
 
@@ -68,10 +88,28 @@ class VirtualBike {
     eng.readable[ident(0x4006)] = () => _u8(gear);
     eng.readable[ident(0x4007)] = () => _u16(lambda * 10000);
     eng.readable[ident(0x4008)] = () => _u8((engineRunning ? coolant + 8 : 24) + 40);
+    // Exhaust flap: actual position, target position, servo current.
+    eng.readable[ident(0x4009)] = () => _u8(flapActualPct * 2.55);
+    eng.readable[ident(0x400A)] = () => _u8(flapTargetPct * 2.55);
+    eng.readable[ident(0x400B)] = () => _u16(flapServoCurrent * 100);
     eng.dtcs[_uds ? 0x2A9400 : 0x2A94] = 0x08;
     eng.freezeFrames[_uds ? 0x2A9400 : 0x2A94] = [0x0F, 0xA0, 0x7A, 0x31];
     eng.routines[ident(0xA001)] = (c, d) => [0x00];
     eng.routines[ident(0xA002)] = (c, d) => gear == 0 ? [0x00] : null;
+    // Exhaust flap actuator. data[0] = commanded position 0..255 (param 3);
+    // returning control (param 0) hands the flap back to the ECU. Driving it
+    // fully open frees a sticky flap, like working it by hand does.
+    eng.ioControls[ident(0xA010)] = (param, d) {
+      if (engineRunning) return null; // only with the engine off
+      if (param == 0) {
+        flapCommandPct = null;
+      } else {
+        final pct = (d.isEmpty ? 0 : d[0]) / 2.55;
+        flapCommandPct = pct;
+        if (pct >= 95) flapFreed = true;
+      }
+      return [0x00];
+    };
     eng.engineRunning = () => engineRunning;
     _add(eng);
 

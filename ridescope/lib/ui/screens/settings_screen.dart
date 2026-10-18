@@ -79,6 +79,27 @@ class SettingsScreen extends StatelessWidget {
                     }
                   : (_) => openLicense(context, highlight: Tier.pro),
             ),
+            SwitchListTile(
+              secondary: const Icon(Icons.sports_motorsports_outlined),
+              title: const Text('Track mode (closed course)'),
+              subtitle: const Text('Unlocks closed-course functions such as holding the exhaust flap open for a '
+                  'dyno run. It does not hide faults or change what the ECU monitors, and does not make the bike '
+                  'road-legal.'),
+              value: app.offRoadMode,
+              onChanged: pro
+                  ? (v) async {
+                      if (v &&
+                          !await confirmDialog(context, 'Turn on track mode?',
+                              'For closed-course and off-road use only. Using these functions on a public road may '
+                              'break road-traffic, noise and emissions rules in your country. You confirm the bike '
+                              'is used off-road.',
+                              ok: 'I understand', destructive: true)) {
+                        return;
+                      }
+                      await app.setOffRoadMode(v);
+                    }
+                  : (_) => openLicense(context, highlight: Tier.pro),
+            ),
             if (app.connected && app.profiles.all.length > 1)
               ListTile(
                 leading: const Icon(Icons.swap_horiz),

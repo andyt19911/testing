@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../licensing/tier.dart';
 import '../ecu/profile.dart';
 import '../ecu/template.dart';
@@ -6,6 +8,10 @@ import '../util/hex.dart';
 import 'session.dart';
 
 typedef ConfirmCallback = Future<bool> Function(String message);
+
+/// Called when a `hold` step begins. The returned future completes when the
+/// rider taps Stop, which ends the hold and returns control to the ECU.
+typedef HoldCallback = Future<void> Function(String message);
 
 class ProcedureProgress {
   ProcedureProgress(this.index, this.total, this.text);
@@ -62,10 +68,14 @@ class ProcedureRunner {
     ProcedureDef p, {
     Map<String, int> inputs = const {},
     required ConfirmCallback confirm,
+    HoldCallback? hold,
     void Function(ProcedureProgress)? onProgress,
   }) async {
     session.require(featureFor(p.kind));
     if (!session.tier.includes(p.tier)) throw FeatureLockedException(featureFor(p.kind));
+    if (p.offRoadOnly && !session.offRoadMode) {
+      throw StateError('${p.name} is for closed-course use. Turn on track mode in Settings first.');
+    }
     if (p.writes && !session.writesAllowed(ecu, procedureVerified: p.verified)) {
       throw StateError('${p.name} has not been verified on this bike');
     }
@@ -105,6 +115,10 @@ class ProcedureRunner {
           case 'io':
             await c.ioControl(s.ident!, s.param ?? 3, data: data());
             break;
+          case 'hold':
+            if (hold == null) throw StateError('No hold handler for ${p.id}');
+            await _hold(c, s, data(), hold);
+            break;
           case 'wait':
             await Future<void>.delayed(Duration(milliseconds: s.ms ?? 1000));
             break;
@@ -126,6 +140,28 @@ class ProcedureRunner {
       session.log.info('"${p.name}" completed');
     } finally {
       if (sessionOpened) await session.endWrite(ecu);
+    }
+  }
+
+  /// Drives the actuator, then re-asserts it on a timer to keep the ECU in
+  /// actuator mode (each request resets its session timeout) until the rider
+  /// taps Stop. When the hold ends the caller's `finally` returns the ECU to
+  /// its default session, so it resumes normal control.
+  Future<void> _hold(DiagClient c, ProcedureStep s, List<int> data, HoldCallback hold) async {
+    final param = s.param ?? 3;
+    await c.ioControl(s.ident!, param, data: data);
+    Timer? keepAlive;
+    keepAlive = Timer.periodic(const Duration(seconds: 2), (_) async {
+      try {
+        await c.ioControl(s.ident!, param, data: data);
+      } catch (e) {
+        session.log.error('Hold re-assert failed: $e');
+      }
+    });
+    try {
+      await hold(s.message ?? 'Holding. Tap Stop to return control to the ECU.');
+    } finally {
+      keepAlive.cancel();
     }
   }
 
@@ -162,6 +198,7 @@ class ProcedureRunner {
         'prompt' => 'Waiting for you',
         'reset' => 'Restarting control unit',
         'clearDtcs' => 'Clearing fault memory',
+        'hold' => 'Holding actuator',
         _ => s.op,
       };
 

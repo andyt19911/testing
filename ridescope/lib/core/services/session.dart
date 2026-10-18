@@ -25,12 +25,18 @@ class DiagnosticSession {
     required this.profile,
     required Tier Function() tier,
     this.expertMode = false,
+    this.offRoadMode = false,
   }) : _tier = tier; // ignore: prefer_initializing_formals
 
   final Elm327Adapter adapter;
   final BikeProfile profile;
   final Tier Function() _tier;
   bool expertMode;
+
+  /// Closed-course / off-road use accepted by the rider. Gates procedures
+  /// marked [ProcedureDef.offRoadOnly]. Does not suppress faults or change
+  /// what the ECU monitors.
+  bool offRoadMode;
 
   final Map<String, DiagClient> _clients = {};
   late final ObdClient obd = ObdClient(adapter);

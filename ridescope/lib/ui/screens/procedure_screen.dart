@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,7 +13,7 @@ import '../../licensing/tier.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
-enum _Stage { setup, running, done, failed }
+enum _Stage { setup, running, holding, done, failed }
 
 /// Guided wizard for any profile procedure: explain → inputs → safety
 /// checks → run with prompts → result.
@@ -33,6 +35,8 @@ class _ProcedureScreenState extends State<ProcedureScreen> {
   ProcedureProgress? _progress;
   String? _error;
   String? _hint;
+  String? _holdMessage;
+  Completer<void>? _holdStop;
 
   ProcedureDef get p => widget.procedure;
 
@@ -40,6 +44,14 @@ class _ProcedureScreenState extends State<ProcedureScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    // If the screen closes mid-hold, end the hold so the runner's cleanup
+    // returns the ECU to normal control.
+    if (_holdStop?.isCompleted == false) _holdStop!.complete();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -76,7 +88,19 @@ class _ProcedureScreenState extends State<ProcedureScreen> {
         p,
         inputs: _inputs,
         confirm: (m) => confirmDialog(context, p.name, m),
-        onProgress: (pr) => setState(() => _progress = pr),
+        hold: (m) {
+          final c = Completer<void>();
+          setState(() {
+            _stage = _Stage.holding;
+            _holdMessage = m;
+            _holdStop = c;
+          });
+          return c.future;
+        },
+        onProgress: (pr) => setState(() {
+          _progress = pr;
+          if (_stage == _Stage.holding) _stage = _Stage.running;
+        }),
       );
       if (p.statusReads.isNotEmpty) {
         _status = await app.runner.readStatus(widget.ecu, p);
@@ -126,6 +150,7 @@ class _ProcedureScreenState extends State<ProcedureScreen> {
         ...switch (_stage) {
           _Stage.setup => _setup(),
           _Stage.running => _running(),
+          _Stage.holding => _holding(),
           _Stage.done => _done(),
           _Stage.failed => _failed(),
         },
@@ -208,6 +233,28 @@ class _ProcedureScreenState extends State<ProcedureScreen> {
         Text(_progress?.text ?? 'Starting…', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         const Text('Keep the ignition on and don\'t disconnect the adapter.'),
+      ];
+
+  List<Widget> _holding() => [
+        const SizedBox(height: 24),
+        const InfoBanner(
+          text: 'Actuator held. The ECU takes back control as soon as you stop; nothing is changed or hidden.',
+          color: AppTheme.accent,
+          icon: Icons.pan_tool_outlined,
+        ),
+        const SizedBox(height: 12),
+        Text(_holdMessage ?? 'Holding…', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 20),
+        FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.bad),
+          icon: const Icon(Icons.stop),
+          label: const Text('Stop and return control to the ECU'),
+          onPressed: () {
+            _holdStop?.complete();
+            _holdStop = null;
+            setState(() => _stage = _Stage.running);
+          },
+        ),
       ];
 
   List<Widget> _done() => [

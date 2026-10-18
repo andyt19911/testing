@@ -48,6 +48,7 @@ class AppState extends ChangeNotifier {
   }) {
     license.addListener(notifyListeners);
     _expert = kv.getString('settings.expert') == '1';
+    _offRoad = kv.getString('settings.offRoad') == '1';
   }
 
   final ProfileRepository profiles;
@@ -63,6 +64,9 @@ class AppState extends ChangeNotifier {
 
   bool _expert = false;
   bool get expertMode => _expert && tier.includes(Tier.pro);
+
+  bool _offRoad = false;
+  bool get offRoadMode => _offRoad && tier.includes(Tier.pro);
 
   bool connecting = false;
   ConnectStep? step;
@@ -96,6 +100,13 @@ class AppState extends ChangeNotifier {
     _expert = v;
     session?.expertMode = expertMode;
     await kv.setString('settings.expert', v ? '1' : '0');
+    notifyListeners();
+  }
+
+  Future<void> setOffRoadMode(bool v) async {
+    _offRoad = v;
+    session?.offRoadMode = offRoadMode;
+    await kv.setString('settings.offRoad', v ? '1' : '0');
     notifyListeners();
   }
 
@@ -136,6 +147,7 @@ class AppState extends ChangeNotifier {
       final s = DiagnosticSession(adapter: adapter, profile: profile, tier: () => tier, expertMode: false);
       session = s;
       s.expertMode = expertMode;
+      s.offRoadMode = offRoadMode;
       _step(ConnectStep.units);
       await s.scan();
       if (s.vin != null && !profile.simulator) {
@@ -191,7 +203,9 @@ class AppState extends ChangeNotifier {
     if (s == null) return;
     _live?.stop();
     _live = null;
-    final next = DiagnosticSession(adapter: s.adapter, profile: p, tier: () => tier)..expertMode = expertMode;
+    final next = DiagnosticSession(adapter: s.adapter, profile: p, tier: () => tier)
+      ..expertMode = expertMode
+      ..offRoadMode = offRoadMode;
     session = next;
     notifyListeners();
     await next.scan();
