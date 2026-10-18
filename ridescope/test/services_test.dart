@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:ridescope/core/adapter/elm327.dart';
 import 'package:ridescope/core/ecu/dtc_database.dart';
 import 'package:ridescope/core/ecu/profile.dart';
+import 'package:ridescope/core/protocol/diag_client.dart';
 import 'package:ridescope/core/ecu/profile_repository.dart';
 import 'package:ridescope/core/ecu/template.dart';
 import 'package:ridescope/core/services/backup_store.dart';
@@ -290,6 +291,17 @@ void main() {
     final t = DataTemplate('{due.dd|bcd8}{due.mm|bcd8}{due.yyyy|bcd16}{input.km|u24}AA');
     expect(t.render(now: DateTime(2026, 1, 31), inputs: {'months': 1, 'km': 10000}),
         [0x28, 0x02, 0x20, 0x26, 0x00, 0x27, 0x10, 0xAA]);
+  });
+
+  test('DTC status: UDS 0x50 is stored, not active (real BMW KOMBI)', () {
+    // From a real bike's cluster: status 0x50 = test not completed, not failing.
+    expect(Dtc(code: 0xE11430, status: 0x50, raw: [0xE1, 0x14, 0x30]).state, DtcState.stored);
+    // Failing now (testFailed bit 0) and pending (bit 2) still classify.
+    expect(Dtc(code: 0x5E2101, status: 0x09, raw: [0x5E, 0x21, 0x01]).state, DtcState.active);
+    expect(Dtc(code: 0x123456, status: 0x04, raw: [0x12, 0x34, 0x56]).state, DtcState.pending);
+    // KWP (2-byte) keeps bit 6 = present.
+    expect(Dtc(code: 0x2A94, status: 0x40, raw: [0x2A, 0x94]).state, DtcState.active);
+    expect(Dtc(code: 0x2A94, status: 0x00, raw: [0x2A, 0x94]).state, DtcState.stored);
   });
 
   test('value encodings', () {

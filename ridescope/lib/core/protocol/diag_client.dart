@@ -68,9 +68,20 @@ class Dtc {
   final int status;
   final List<int> raw;
 
-  /// UDS status bit 0 (`testFailed`) / KWP bit 6 (`present`) means the fault
-  /// is currently present.
+  /// Whether the fault is present now, intermittent, or just stored.
+  ///
+  /// The status byte means different things on the two protocols, so it is
+  /// read differently (UDS codes are 3 bytes, KWP 2):
+  ///  * UDS (ISO 14229): bit 0 `testFailed` = failing now; bit 2 `pendingDTC`
+  ///    = intermittent. Bits 4/6 are "test not completed" and do NOT mean the
+  ///    fault is present — a common BMW status is 0x50, which is stored only.
+  ///  * KWP2000: bit 6 = present, bit 2 = pending.
   DtcState get state {
+    if (raw.length >= 3) {
+      if (status & 0x01 != 0) return DtcState.active;
+      if (status & 0x04 != 0) return DtcState.pending;
+      return DtcState.stored;
+    }
     if (status & 0x01 != 0 || status & 0x40 != 0) return DtcState.active;
     if (status & 0x04 != 0) return DtcState.pending;
     return DtcState.stored;
