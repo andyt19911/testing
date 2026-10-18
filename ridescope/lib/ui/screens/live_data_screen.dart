@@ -204,7 +204,7 @@ class _GaugeCard extends StatelessWidget {
           Expanded(
             child: Center(
               child: d.min != null && d.max != null
-                  ? ArcGauge(value: sample?.value, min: d.min!, max: d.max!, label: d.name, unit: d.unit)
+                  ? ArcGauge(value: sample?.value, min: d.min!, max: d.max!, unit: d.unit)
                   : Column(mainAxisSize: MainAxisSize.min, children: [
                       FittedBox(
                         child: Text(sample?.text ?? '—',

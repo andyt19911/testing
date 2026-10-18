@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../app/app_state.dart';
 import '../../app/garage.dart';
 import '../theme.dart';
+import '../widgets/brand.dart';
 import '../widgets/common.dart';
 import 'connect_screen.dart';
 import 'settings_screen.dart';
@@ -16,78 +17,150 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final bikes = app.garage.bikes;
-    final t = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('RideScope'),
-        actions: [
-          InkWell(
-            borderRadius: BorderRadius.circular(99),
-            onTap: () => openLicense(context),
-            child: Padding(padding: const EdgeInsets.all(8), child: TierBadge(app.license.tier)),
-          ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-          ),
-        ],
-      ),
-      body: Body(children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(Icons.two_wheeler, size: 44, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 12),
-              Text('Connect to your bike', style: t.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              const Text('Plug the OBD adapter into the diagnostic socket, switch the ignition on and leave the engine off.'),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.bluetooth_searching),
-                  label: const Text('Connect'),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConnectScreen())),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.science_outlined),
-                  label: const Text('Try the demo bike'),
-                  onPressed: () => runConnect(context, () => app.connectDemo()),
-                ),
-              ),
-            ]),
+      body: SafeArea(
+        bottom: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+              children: [
+                _TopBar(onSettings: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
+                const SizedBox(height: 16),
+                const _Hero(),
+                if (app.error != null) ...[
+                  const SizedBox(height: 14),
+                  InfoBanner(text: app.error!, color: AppTheme.bad, icon: Icons.error_outline),
+                ],
+                if (bikes.isNotEmpty) ...[
+                  SectionHeader('My garage', trailing: Text('${bikes.length}', style: context.text.labelMedium?.copyWith(color: context.rs.muted))),
+                  for (final b in bikes) ...[_BikeCard(b), const SizedBox(height: 10)],
+                ],
+                const SectionHeader('Adapters that work'),
+                const _AdapterGuide(),
+              ],
+            ),
           ),
         ),
-        if (app.error != null) ...[
-          const SizedBox(height: 12),
-          InfoBanner(text: app.error!, color: AppTheme.bad, icon: Icons.error_outline),
-        ],
-        if (bikes.isNotEmpty) ...[
-          const SectionHeader('My garage'),
-          for (final b in bikes) ...[_BikeCard(b), const SizedBox(height: 8)],
-        ],
-        const SectionHeader('Adapters that work'),
-        const Card(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _AdapterRow('OBDLink LX / MX+ / CX', 'Recommended. Every function, including service reset and coding.', AppTheme.ok),
-              _AdapterRow('UniCarScan UCSI-2000 / 2100', 'Every function on most bikes.', AppTheme.ok),
-              _AdapterRow('ELM327 (genuine or clone)', 'Faults and live data only. Can\'t send the long messages needed for service reset.', AppTheme.warn),
-              SizedBox(height: 8),
-              Text('Bikes with the round 10-pin socket need a 10-pin to OBD-II cable.'),
-            ]),
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar({required this.onSettings});
+  final VoidCallback onSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppState>();
+    return Row(children: [
+      const Flexible(
+        child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Wordmark(size: 26)),
+      ),
+      const Spacer(),
+      InkWell(
+        borderRadius: BorderRadius.circular(99),
+        onTap: () => openLicense(context),
+        child: Padding(padding: const EdgeInsets.all(6), child: TierBadge(app.license.tier)),
+      ),
+      const SizedBox(width: 4),
+      IconButton(tooltip: 'Settings', icon: const Icon(Icons.settings_outlined), onPressed: onSettings),
+    ]);
+  }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.read<AppState>();
+    final rs = context.rs;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: rs.outline),
+        gradient: rs.heroWash(rs.accent),
+      ),
+      child: Stack(children: [
+        Positioned(
+          right: -20,
+          bottom: -10,
+          child: Opacity(
+            opacity: 0.18,
+            child: CustomPaint(size: const Size(230, 150), painter: MotorcycleGlyph(color: rs.accent)),
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(gradient: rs.signature, borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.bluetooth_searching, color: Colors.white, size: 26),
+            ),
+            const SizedBox(height: 18),
+            Text('Connect to\nyour bike', style: context.text.displaySmall),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: 320,
+              child: Text(
+                'Plug the OBD adapter into the diagnostic socket, switch the ignition on and leave the engine off.',
+                style: context.text.bodyLarge?.copyWith(color: rs.muted),
+              ),
+            ),
+            const SizedBox(height: 22),
+            GradientButton(
+              label: 'Connect',
+              icon: Icons.bluetooth_searching,
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConnectScreen())),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.play_circle_outline),
+                label: const Text('Try the demo bike'),
+                onPressed: () => runConnect(context, () => app.connectDemo()),
+              ),
+            ),
+          ]),
         ),
       ]),
     );
   }
+}
+
+class _AdapterGuide extends StatelessWidget {
+  const _AdapterGuide();
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const _AdapterRow('OBDLink LX / MX+ / CX', 'Recommended. Every function, including service reset and coding.', AppTheme.ok),
+            _divider(context),
+            const _AdapterRow('UniCarScan UCSI-2000 / 2100', 'Every function on most bikes.', AppTheme.ok),
+            _divider(context),
+            const _AdapterRow('ELM327 (generic)', 'Faults and live data. The app tests whether it can do service reset on connect.', AppTheme.warn),
+            const SizedBox(height: 14),
+            Row(children: [
+              Icon(Icons.cable, size: 18, color: context.rs.muted),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Bikes with the round 10-pin socket need a 10-pin to OBD-II cable.',
+                    style: context.text.bodySmall),
+              ),
+            ]),
+          ]),
+        ),
+      );
+
+  Widget _divider(BuildContext context) =>
+      Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Divider(height: 1, color: context.rs.outline));
 }
 
 class _AdapterRow extends StatelessWidget {
@@ -97,19 +170,17 @@ class _AdapterRow extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(padding: const EdgeInsets.only(top: 4), child: Icon(Icons.circle, size: 10, color: color)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
-              Text(detail, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            ]),
-          ),
-        ]),
-      );
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.only(top: 3), child: StatusDot(color)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(name, style: context.text.titleSmall),
+            const SizedBox(height: 2),
+            Text(detail, style: context.text.bodySmall),
+          ]),
+        ),
+      ]);
 }
 
 class _BikeCard extends StatelessWidget {
@@ -118,24 +189,40 @@ class _BikeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    final rs = context.rs;
+    final faultColor = bike.faultCount == null
+        ? rs.muted
+        : (bike.faultCount == 0 ? AppTheme.ok : AppTheme.warn);
     return Card(
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: const CircleAvatar(child: Icon(Icons.two_wheeler)),
-        title: Text(bike.title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(bike.vin, style: TextStyle(color: sub, fontFamily: 'monospace')),
-          const SizedBox(height: 4),
-          Wrap(spacing: 6, runSpacing: 4, children: [
-            Pill('Last seen ${DateFormat('d MMM').format(bike.lastConnected)}', color: Colors.blueGrey),
-            if (bike.faultCount != null)
-              Pill(bike.faultCount == 0 ? 'No faults' : '${bike.faultCount} faults',
-                  color: bike.faultCount == 0 ? AppTheme.ok : AppTheme.warn),
-            if (bike.serviceDue != null) Pill('Service ${bike.serviceDue}', color: AppTheme.accent),
-          ]),
-        ]),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConnectScreen())),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(gradient: rs.heroWash(rs.accent), borderRadius: BorderRadius.circular(14), border: Border.all(color: rs.outline)),
+              child: CustomPaint(painter: MotorcycleGlyph(color: rs.accent, strokeWidth: 2.2), child: const SizedBox.expand()),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(bike.title, style: context.text.titleMedium),
+                Text(bike.vin, style: context.text.bodySmall?.copyWith(fontFeatures: tabular, letterSpacing: 0.4)),
+                const SizedBox(height: 8),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  Pill('Seen ${DateFormat('d MMM').format(bike.lastConnected)}', color: rs.muted),
+                  if (bike.faultCount != null)
+                    Pill(bike.faultCount == 0 ? 'No faults' : '${bike.faultCount} faults', color: faultColor),
+                  if (bike.serviceDue != null) Pill('Service ${bike.serviceDue}', color: AppTheme.accent),
+                ]),
+              ]),
+            ),
+            Icon(Icons.chevron_right, color: rs.muted),
+          ]),
+        ),
       ),
     );
   }

@@ -14,6 +14,7 @@ import 'licensing/purchase_service.dart';
 import 'ui/screens/dashboard_screen.dart';
 import 'ui/screens/home_screen.dart';
 import 'ui/theme.dart';
+import 'ui/widgets/common.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,14 +53,17 @@ class RideScopeApp extends StatelessWidget {
   const RideScopeApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        title: 'RideScope',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
-        themeMode: ThemeMode.dark,
-        home: const _Root(),
-      );
+  Widget build(BuildContext context) {
+    final mode = context.select<AppState, ThemeMode>((s) => s.appearance.mode);
+    return MaterialApp(
+      title: 'RideScope',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: mode,
+      home: const _Root(),
+    );
+  }
 }
 
 class _Root extends StatelessWidget {
@@ -67,10 +71,40 @@ class _Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final connected = context.select<AppState, bool>((s) => s.connected && !s.connecting);
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 250),
-      child: connected ? const DashboardScreen() : const HomeScreen(),
+    final app = context.watch<AppState>();
+    final connected = app.connected && !app.connecting;
+    // The dashboard is a root view (not a pushed route), so the system back
+    // gesture would otherwise pop the app's only route and quit. Intercept it:
+    // back on the dashboard disconnects and returns to Home instead.
+    return PopScope(
+      canPop: !connected,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop || !connected) return;
+        final leave = app.isDemo ||
+            await confirmDialog(
+              context,
+              'Disconnect?',
+              'This ends the session with ${app.session?.profile.name ?? 'your bike'}.',
+              ok: 'Disconnect',
+              cancel: 'Stay connected',
+            );
+        if (leave) await app.disconnect();
+      },
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: SlideTransition(
+            position: Tween(begin: const Offset(0, 0.02), end: Offset.zero).animate(anim),
+            child: child,
+          ),
+        ),
+        child: connected
+            ? const DashboardScreen(key: ValueKey('dashboard'))
+            : const HomeScreen(key: ValueKey('home')),
+      ),
     );
   }
 }

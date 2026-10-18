@@ -57,6 +57,29 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => openLicense(context),
           ),
         ),
+        const SectionHeader('Appearance'),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SegmentedButton<Appearance>(
+              segments: [
+                for (final a in Appearance.values)
+                  ButtonSegment(
+                    value: a,
+                    label: Text(a.label),
+                    icon: Icon(switch (a) {
+                      Appearance.system => Icons.brightness_auto_outlined,
+                      Appearance.dark => Icons.dark_mode_outlined,
+                      Appearance.light => Icons.light_mode_outlined,
+                    }),
+                  ),
+              ],
+              selected: {app.appearance},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) => app.setAppearance(s.first),
+            ),
+          ),
+        ),
         const SectionHeader('Advanced'),
         Card(
           child: Column(children: [

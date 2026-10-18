@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:ridescope/app/app_state.dart';
@@ -54,7 +55,7 @@ void main() {
 
     final state = await tester.runAsync(makeState);
     await tester.pumpWidget(wrap(state!));
-    expect(find.text('Connect to your bike'), findsOneWidget);
+    expect(find.text('Connect to\nyour bike'), findsOneWidget);
 
     await tester.runAsync(() => state.connectDemo());
     await tester.pumpAndSettle();
@@ -89,8 +90,34 @@ void main() {
     await tester.runAsync(() => state.connectDemo());
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Bike settings'));
-    await tester.tap(find.text('Bike settings'));
-    await settle(tester, 300);
+    await tester.pump();
+    await tester.tap(find.text('Bike settings'), warnIfMissed: false);
+    await tester.pumpAndSettle();
     expect(find.text('COMPARE'), findsOneWidget);
+  });
+
+  testWidgets('back from the dashboard returns to home instead of exiting', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+
+    final state = await tester.runAsync(makeState);
+    await tester.pumpWidget(wrap(state!));
+    await tester.runAsync(() => state.connectDemo());
+    await tester.pumpAndSettle();
+    expect(find.text('WHAT DO YOU WANT TO DO?'), findsOneWidget);
+
+    // Simulate the system back gesture at the root route.
+    final dispatcher = tester.binding.defaultBinaryMessenger;
+    await dispatcher.handlePlatformMessage(
+      'flutter/navigation',
+      const JSONMethodCodec().encodeMethodCall(const MethodCall('popRoute')),
+      (_) {},
+    );
+    await settle(tester, 400);
+
+    // The demo bike disconnects straight to Home; the app does not exit.
+    expect(state.connected, isFalse);
+    expect(find.text('Connect to\nyour bike'), findsOneWidget);
   });
 }

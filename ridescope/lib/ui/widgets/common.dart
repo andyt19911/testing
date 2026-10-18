@@ -6,17 +6,20 @@ import '../../licensing/tier.dart';
 import '../screens/license_screen.dart';
 import '../theme.dart';
 
-/// Max content width so tablets and the web demo don't stretch rows.
+/// Scrollable page body with a comfortable reading width and safe-area gutters.
 class Body extends StatelessWidget {
-  const Body({super.key, required this.children, this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 32)});
+  const Body({super.key, required this.children, this.padding = const EdgeInsets.fromLTRB(16, 4, 16, 40)});
   final List<Widget> children;
   final EdgeInsets padding;
 
   @override
   Widget build(BuildContext context) => Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: ListView(padding: padding, children: children),
+          constraints: const BoxConstraints(maxWidth: 820),
+          child: ListView(
+            padding: padding + MediaQuery.of(context).padding.copyWith(top: 0, left: 0, right: 0),
+            children: children,
+          ),
         ),
       );
 }
@@ -28,15 +31,17 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+        padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
         child: Row(children: [
+          Container(
+            width: 3,
+            height: 15,
+            margin: const EdgeInsets.only(right: 9),
+            decoration: BoxDecoration(gradient: context.rs.signature, borderRadius: BorderRadius.circular(2)),
+          ),
           Expanded(
             child: Text(text.toUpperCase(),
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      letterSpacing: 1.1,
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    )),
+                style: context.text.labelMedium?.copyWith(letterSpacing: 1.3, color: context.rs.muted)),
           ),
           ?trailing,
         ]),
@@ -44,36 +49,110 @@ class SectionHeader extends StatelessWidget {
 }
 
 class Pill extends StatelessWidget {
-  const Pill(this.text, {super.key, required this.color, this.icon});
+  const Pill(this.text, {super.key, required this.color, this.icon, this.filled = false});
   final String text;
   final Color color;
   final IconData? icon;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: EdgeInsets.fromLTRB(icon != null ? 8 : 11, 5, 11, 5),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
+          color: color.withValues(alpha: filled ? 1 : 0.14),
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
+          border: filled ? null : Border.all(color: color.withValues(alpha: 0.45)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[Icon(icon, size: 14, color: color), const SizedBox(width: 4)],
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: filled ? Colors.white : color),
+            const SizedBox(width: 5),
+          ],
           Flexible(
             child: Text(text,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                style: context.text.labelSmall?.copyWith(
+                    color: filled ? Colors.white : color, fontSize: 12, letterSpacing: 0.2)),
           ),
         ]),
       );
 }
 
-class TierBadge extends StatelessWidget {
-  const TierBadge(this.tier, {super.key});
-  final Tier tier;
+/// A small coloured dot, for inline status.
+class StatusDot extends StatelessWidget {
+  const StatusDot(this.color, {super.key, this.size = 9, this.glow = true});
+  final Color color;
+  final double size;
+  final bool glow;
   @override
-  Widget build(BuildContext context) =>
-      Pill(tier.label, color: AppTheme.tier(tier), icon: tier == Tier.free ? null : Icons.workspace_premium);
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          boxShadow: glow ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 7, spreadRadius: 0.5)] : null,
+        ),
+      );
+}
+
+class TierBadge extends StatelessWidget {
+  const TierBadge(this.tier, {super.key, this.filled = false});
+  final Tier tier;
+  final bool filled;
+  @override
+  Widget build(BuildContext context) => Pill(
+        tier.label.toUpperCase(),
+        color: AppTheme.tier(tier),
+        filled: filled,
+        icon: tier == Tier.free ? null : Icons.bolt,
+      );
+}
+
+/// Primary call-to-action with the signature gradient.
+class GradientButton extends StatelessWidget {
+  const GradientButton({super.key, required this.label, required this.onPressed, this.icon, this.enabled = true});
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final on = enabled && onPressed != null;
+    return Opacity(
+      opacity: on ? 1 : 0.5,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: context.rs.signature,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: on
+              ? [BoxShadow(color: context.rs.accent.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8))]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: on ? onPressed : null,
+            child: Container(
+              height: 56,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(mainAxisAlignment: MainAxisAlignment.center, mainAxisSize: MainAxisSize.min, children: [
+                if (icon != null) ...[Icon(icon, color: Colors.white, size: 22), const SizedBox(width: 10)],
+                Flexible(
+                  child: Text(label,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.labelLarge?.copyWith(color: Colors.white, fontSize: 17)),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Shown instead of a feature the current tier doesn't include.
@@ -84,22 +163,27 @@ class LockedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = feature.minTier;
+    final tc = AppTheme.tier(t);
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(22),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Icon(Icons.lock_outline, color: AppTheme.tier(t)),
-            const SizedBox(width: 8),
-            Expanded(child: Text(feature.label, style: Theme.of(context).textTheme.titleMedium)),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: tc.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(12)),
+              child: Icon(Icons.lock_outline, color: tc),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(feature.label, style: context.text.titleLarge)),
             TierBadge(t),
           ]),
-          const SizedBox(height: 8),
-          Text('Included in RideScope ${t.label}. ${t.tagline}.'),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => openLicense(context, highlight: t),
-            child: Text('See ${t.label}'),
+          const SizedBox(height: 12),
+          Text('Included in RideScope ${t.label}. ${t.tagline}.', style: TextStyle(color: context.rs.muted)),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: GradientButton(label: 'Unlock ${t.label}', icon: Icons.bolt, onPressed: () => openLicense(context, highlight: t)),
           ),
         ]),
       ),
@@ -128,35 +212,43 @@ class InfoBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, color: color),
+          Icon(icon, color: color, size: 22),
           const SizedBox(width: 12),
-          Expanded(child: Text(text)),
+          Expanded(child: Text(text, style: context.text.bodyMedium?.copyWith(height: 1.45))),
           if (action != null) ...[const SizedBox(width: 8), action!],
         ]),
       );
 }
 
 class KeyValueRow extends StatelessWidget {
-  const KeyValueRow(this.label, this.value, {super.key});
+  const KeyValueRow(this.label, this.value, {super.key, this.mono = false});
   final String label;
   final String value;
+  final bool mono;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
-            width: 140,
-            child: Text(label, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            width: 150,
+            child: Text(label, style: context.text.bodyMedium?.copyWith(color: context.rs.muted)),
           ),
-          Expanded(child: SelectableText(value, style: const TextStyle(fontWeight: FontWeight.w600))),
+          const SizedBox(width: 8),
+          Expanded(
+            child: SelectableText(value,
+                style: context.text.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: mono ? tabular : null,
+                    letterSpacing: mono ? 0.3 : 0)),
+          ),
         ]),
       );
 }
@@ -169,8 +261,23 @@ String friendlyError(Object e) {
 
 void showError(BuildContext context, Object e) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text(friendlyError(e)),
+    content: Row(children: [
+      const Icon(Icons.error_outline, color: Colors.white, size: 20),
+      const SizedBox(width: 10),
+      Expanded(child: Text(friendlyError(e), style: const TextStyle(color: Colors.white))),
+    ]),
     backgroundColor: AppTheme.bad,
+  ));
+}
+
+void showOk(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+    content: Row(children: [
+      const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+      const SizedBox(width: 10),
+      Expanded(child: Text(message, style: const TextStyle(color: Colors.white))),
+    ]),
+    backgroundColor: AppTheme.ok,
   ));
 }
 

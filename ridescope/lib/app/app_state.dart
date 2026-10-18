@@ -22,6 +22,7 @@ import '../core/util/diag_log.dart';
 import '../licensing/license_service.dart';
 import '../licensing/purchase_service.dart';
 import '../licensing/tier.dart';
+import '../ui/theme.dart' show Appearance;
 import 'garage.dart';
 
 enum ConnectStep { link, adapter, bike, units, done }
@@ -49,6 +50,7 @@ class AppState extends ChangeNotifier {
     license.addListener(notifyListeners);
     _expert = kv.getString('settings.expert') == '1';
     _offRoad = kv.getString('settings.offRoad') == '1';
+    _appearance = Appearance.values.asNameMap()[kv.getString('settings.appearance')] ?? Appearance.dark;
   }
 
   final ProfileRepository profiles;
@@ -67,6 +69,15 @@ class AppState extends ChangeNotifier {
 
   bool _offRoad = false;
   bool get offRoadMode => _offRoad && tier.includes(Tier.pro);
+
+  Appearance _appearance = Appearance.dark;
+  Appearance get appearance => _appearance;
+
+  Future<void> setAppearance(Appearance a) async {
+    _appearance = a;
+    await kv.setString('settings.appearance', a.name);
+    notifyListeners();
+  }
 
   bool connecting = false;
   ConnectStep? step;
